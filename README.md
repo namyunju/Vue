@@ -657,3 +657,153 @@ NPM 활용해 수많은 오픈 소스 패키지와 라이브러리를 제공, �
 - package.json과 package-lock.json 직접 편집 자제
 - 문제 발생 시 node-modules폴더 삭제 후 다시 npm install
 </details>
+
+<details>
+<summary>Component State Flow</summary>
+
+### Onboarding
+전체 목록은 부모가, 각 항목은 자식이 보여줄 때, 둘의 협력 방식은 어떨까?
+
+컴포넌트 협업의 기본
+
+props, component events
+
+## Props
+Props: 부모 컴포넌트로부터 자식 컴포넌트로 데이터를 전달하는 데 사용되는 사용자 지정 특성
+
+데이터는 부모에서 자식으로 한 방향으로만 흐르며, 자식 컴포넌트는 전달받은 props를 직접수정해서는 안 됨. (읽기 전용)
+
+- 자식이 부모 속성을 바꾸려면 props를 수정하지 않고 emit을 이용.
+- 객체 / 배열 props는 자식에서 내부 값 바꾸면 부모의 원본도 바뀌므로 주의.
+
+페북: 동일한 사진 데이터가 한 화면에서 여러 번 출력되는 상황. 
+
+서로 다른 컴포넌트에 동일한 데이터가 사용됨. 
+
+사진 변경 시 모든 컴포넌트에 각각 변경 요청해야하는가?
+>> 공통된 부모 컴포넌트에서 관리하자.
+
+- 부모가 자식에게 데이터 전달: Pass Props
+- 자식은 자신에게 일어난 일을 부모에게 알림: Emit event
+
+
+1. Props 작성
+
+부모 컴포넌트 Parent.vue 에서 자식 컴포넌트에게 보낼 props 작성
+```
+<template>
+    <div>
+        <ParentChild my-msg="message" />
+    </div>
+</template>
+```
+
+- ParentChild 컴포넌트에게 my-msg라는 이름을 가진 props를 전달.
+- message는 props 값
+
+
+2. Props 선언
+
+부모 컴포넌트에서 내려 보낸 props를 사용하기 위해서는 자식 컴포넌트에서 명시적인 props 선언이 필요. defineProps() 사용. 카멜 케이스
+
+- 어떤 이름의 데이터를 어떤 타입으로 받을 지 정의. 객체 선언 방식 권장
+
+
+```
+<script setup>
+    defineProps(['myMsg'])
+</script>
+```
+
+- 선언 방식
+    - 문자열 배열 사용 선언
+    - 객체 사용 선언
+
+### 한 단계 더 props 내려 보내기
+자식이 부모에게서 받은 props를 또 그의 자식에게 전달 가능!
+
+```
+<ParentGrandChild :my-msg="myMSG" />
+
+```
+v-bind를 사용한 동적 props
+
+
+### 참고
+- Props Name Casing
+    - 부모에서는 my-msg="message" 전달(케밥케이스)
+    - 자식에서는 myMSG로 받음(카멜케이스)
+
+- static props (정적)
+- Dynamic props (동적). v-bind 사용
+
+
+동적 할당?
+- 고정된 값이 아닌 바뀌는 데이터를 연결
+- 부모의 데이터와 자식의 속성을 실시간으로 연결
+
+
+- Parent.vue
+```
+<ParentItem 
+      v-for="item in items" 
+      :key="item.id" 
+      :my-prop="item"
+    />
+
+```
+- ParentItem 컴포넌트를 items 배열의 요소 개수만큼 반복하여 생성
+- :my-prop="item" 데이터를 props를 통해 전달. 없으면 데이터를 전달하지 않는 것
+
+>> items라는 배열의 요소들을 하나씩 꺼내, 각 요소마다 고유한 id를 부여하며 ParentItem 컴포넌트를 만들어라. 그리고 현재 요소item 전체를 myProp이라는 이름으로 ParentItem에 전달해라
+
+## Emit
+자식은 자신에게 일어난 일을 부모에게 알림 Emit event!
+
+$emit(event, ...args)
+
+자식
+```
+<button @click="$emit('someEvent')">클릭</button>
+```
+부모
+```
+<ParentChild @some-event="someCallback" />
+```
+
+자식은 someEvent라는 이벤트 발신 >> 부모는 @ v-on 사용하여 이벤트 수신
+
+### emit 이벤트 선언
+```
+<template>
+    <button @click="buttonClick"> </button>
+</template>
+
+<script setup>
+    const emit = defineEmits(['someEvent'])
+
+    const buttonClick = function () {
+        emit('someEvent')
+    }
+</script>
+```
+
+- 버튼 클릭 시 buttonClick 함수 실행. buttonClick 함수는 defineEmits 선언
+- emit은 someEvent라는 알림을 부모에게 보냄
+
+
+```
+<button @click="emitArgs"></button>
+
+const emit = defineEmits(['emitArgs'])
+
+const emitArgs = function () {
+    emit('emitArgs',1,2,3)
+}
+```
+- emit 변수: 이벤트를 발생시키는 함수
+- defineEmits: 부모에게 보낼 이벤트 선언. **실제 이벤트 발생시키는 함수를 반환**
+- emitArgs 함수: 버튼클릭 핸들러
+- emitArgs 이벤트 이름
+
+</details>
