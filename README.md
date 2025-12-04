@@ -807,3 +807,191 @@ const emitArgs = function () {
 - emitArgs 이벤트 이름
 
 </details>
+
+<details><summary>Router</summmary>
+
+### Onboarding
+웹사이트의 여러 페이지. SPA(Single Page Application)에서는 어떻게 페이지를 나눌까?
+>> Vue Router
+
+- <RouterLink> : 페이지 이동 링크
+- <RouterView> : 현재 주소에 맞는 컴포넌트가 그려질 위치
+SPA에서 페이지를 바꾸지 않고 링크를 설정할 수 있다. 마치 여러 페이지를 사용하는 것처럼 보임.
+
+## Routing
+
+사용자가 접속한 URL 주소에 따라 경로를 선택하는 프로세스
+
+- SSR에서 Routing: 서버측에서 실행. (페이지 재로드)
+- CSR에서 Routing: 클라이언트측에서 수행. (동적으로 데이터 가져옴)
+
+
+## Vue Router
+
+Vue의 공식 라우터.
+
+어떤 URL 경로에 어떤 컴포넌트를 보여줄지 정의하면 Vue Router가 연결해줌.
+
+Vite로 프로젝트 생성 시 Router 추가.
+
+- Vue 프로젝트 구조 변화 
+1. App.vue 코드 변화
+- RouterLink로 url 생성 및 로직 처리
+- RouterView로 원하는 곳에 배치, 컴포넌트 표시
+
+2. router 폴더 신규 생성
+- router/index.js
+- 라우팅에 대한 정보 및 설정 작성
+- 각 주소 접속 시 어떤 Vue 컴포넌트 보여줄 지 연결
+
+3. views 폴더 신규 생성
+- RouterView 위치에 렌더링 할 컴포넌트를 배치
+- 기존 components 폴더와 기능적으로 다른 것 없음. 단순 분류 의미.
+- 구분 위해 이름을 View로 끝나게 작성.
+
+
+### 라우팅 기본 동작 순서
+
+1. index.js 에 라우터 관련 설정 작성
+```
+const router = createRouter({
+    history: createWebHistory(import.meta.env.BASE_URL),
+    routes: [
+        {
+            path:'/',
+            name:'home',
+            component: HomeView,
+        }
+    ]
+})
+```
+2. RouterLink에 index에 정의한 주소(path) 값 작성 (App.vue)
+3. RouterLink 클릭 시 경로와 일치하는 컴포넌트가 RouterView에서 렌더링
+```
+<template>
+    <nav>
+        <RouterLink to="/">Home</RouterLink>
+        <RouterLink to="/about">About</RouterLink>
+    </nav>
+    <RouterView />
+</template>
+```
+
+- Named Routes
+    - name 속성 값 경로 이름 지정
+    - RouterLink 에 v-bind 사용해 to props 객체로 전달 가능
+    - <RouterLink :to="{name:'home'}">Home</RouterLink>
+
+
+- Dynamic Route Matching
+    - 일정한 패턴 (user/1, user/2, user/3) 
+
+- 매개변수를 사용한 동적 경로 매칭 활용
+
+1. 프로필 페이지 컴포넌트 작성 views 폴더 내에 UserView.vue
+2. router/index.js파일에 UserView 컴포넌트 라우터를 등록
+    - {path: '/user/:id', ...}
+3. App.vue 에 RouterLink 작성
+```
+const userId = ref(1)
+<RouterLink :to="{name:'user', params: {'id':userId}}">
+```
+4. UserView.vue 내용 작성
+- 경로 일치하면 라우트의 매개변수는 컴포넌트에서 $route.params로 참조 가능
+```
+{{ $route.params }}
+{{ $route.params.id }}
+```
+
+5. UserView.vue 권장 작성
+```
+import { useRoute } from 'vue-router'
+const route = useRoute()
+const userId = ref(route.params.id)
+
+<template>
+{{ userId }}
+</template>
+
+```
+
+### Nested Routes
+중첩된 라우팅: 부모 레이아웃 유지한 채 그 안의 일부만 다른 내용으로 교체
+
+- index.js에서 children 옵션을 사용해 컴포넌트 등록
+```
+{
+    path:...,
+    component:...,
+    name:...,
+    children: [
+        { path: ..., name: ..., component: ...},
+        { path: ..., name: ..., component: ...}
+    ]
+
+}
+```
+### Programmatic Navigation
+<RouterLink> 대신 JavaScropt 코드로 URL 이동 방법
+
+router.push() 와 router.replace()
+
+1. router.push()
+- 다른 url로 이동하는 메서드.
+- 새 항목을 history stack 에 push. 뒤로 가기 클릭 시 이전 URL 이동 가능.
+- 선언적 표현: <RouterLink :to="...">
+- 프로그래밍적 표현: router.push(...)
+```
+const router = useRouter()
+const goHome = function () {
+    router.push({name:'home'})
+}
+
+<button @click="goHome"></button>
+```
+
+2. router.replace()
+- 현재 위치 바꾸는 메서드
+- push와 달리 history stack에 push 하지 않아서 뒤로 가기 불가
+- 선언적 표현: <RouterLink :to="..." replace>
+- 프로그래밍적 표현: router.replace(...)
+
+## route와 router
+
+- route
+    - useRoute() : 현재 활성화된 경로 정보를 담은 route 객체를 반환
+    - useRoute()는 컴포넌트의 setup 함수나 script setup 최상단에서만 호출
+    - route 객체: 현재 URL 상태 보여줌 / 읽기 전용 / 반응형
+
+- router
+    - useRouter(): 라우터 인스턴스 router 객체를 반환
+    - useRouter는 페이지 이동 등 액션용, useRoute는 경로 정보 읽기용
+    - router 객체: 애플리케이션 전체 라우팅 로직 제어 / 페이지 이동 / 
+    - 네비게이션 가드 등록 / 히스토리 제어 같은 기능 사용 가능
+
+
+## Navigation Guard
+
+Vue router로 url 접근 시 다른 url로 redirect 또는 취소하여 내비게이션 보호.
+
+- url로 이동 전이나 후에 자동 실행. 
+- 사용자의 로그인 상태나 권한 확인하여 내비게이션을 허용/취소/리다이렉트
+
+종류: Globally(전역가드), Per-route(라우터가드), In-component(컴포넌트가드)
+
+1. Globally Guard (index.js에 작성)
+- beforeEach()
+- beforeResolve()
+- afterEach()
+- 방식: router.beforeEach((to,from) => { return })
+
+2. Per-route Guard (index.js의 각 routes에 작성)
+- routes: [path: '', name:'', component: , beforeEnter: (to,from)=>{}]
+
+
+3. In-component Guard (각 컴포넌트의 script 내부에 작성)
+- onBeforeRouteLeave()
+- onBeforeRouteUpdate()
+
+</details>
+
