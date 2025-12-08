@@ -995,3 +995,131 @@ Vue router로 url 접근 시 다른 url로 redirect 또는 취소하여 내비�
 
 </details>
 
+<details><summary>State Management</summary>
+
+### onboarding
+- Props는 부모 컴포넌트가 자식 컴포넌트에게 데이터를 전달 (단방향)
+- 깊이가 깊어지게 되면 유지보수가 아렵다
+>> 모든 컴포넌트가 공유하는 중앙데이터 저장소를 만드는 Pinia 상태관리 기법!!
+
+## State Management
+- 뷰의 상태 관리의 단순성 (단방향 데이터 흐름)
+- 상태 관리의 단순성이 무너지는 경우
+    - 여러 뷰가 동일한 상태에 종속되는 경우
+    - 서로 다른 뷰의 기능이 동일한 상태를 변경시켜야 하는 경우
+- 해결 방법
+    - 각 컴포넌트의 공유 상태를 추출, 전역에서 참조할 수 있는 저장소에서 관리
+    - 저장소 : Pinia
+
+## Pinia
+- 여러 컴포넌트가 함께 사용해야 하는 공통 데이터를 중앙 저장소에서의 통합 관리를 도와줌.
+- (간단한 트리 구조에서는 Props와 emit 사용 좋음)
+
+
+1. Vite 프로젝트 빌드 시 Pinia 라이브러리 추가
+- stores 폴더 생성됨.
+
+2. Pinia 구성 요소
+- store 
+    - 공통 데이터 관리 중앙 저장소
+    - 모든 컴포넌트가 공유하는 상태, 기능 작성됨
+    - defineStore()의 반환 값을 담는 변수 이름은 use...Store 패턴 사용 권장.
+    - defineStore()의 첫 번째 인자는 애플리케이션 전체에 걸쳐 사용하는 store 고유 ID
+
+- state
+    - 중앙 저장소에 저장되는 반응형 상태
+    - 해당 값 변경하면 이 데이터 사용하고 있는 모든 컴포넌트 화면 자동 업데이트
+    - ref() 와 같은 역할
+
+- getters
+    - 계산된 값
+    - state 기반으로 파생된 값을 정의
+    - computed()와 같은 역할
+
+- actions
+    - state를 변경하는 역할
+    - methods와 같은 역할
+
+- 반환값
+    - pinia 상태들 사용하려면 반드시 반환해야 함
+    - store에서는 공유하지 않는 private한 상태속성을 가지지 않음
+
+- plugin
+    - 애플리케이션 상태 관리에 필요한 추가 기능 제공하거나 확장하는 도구나 모듈
+    - 패키지 매니저로 설치 이후 별도 설정 통해 추가 됨
+
+### 기본 사용 방법
+
+1. store에 정의
+```
+import { ref, computed } from 'vue'
+import {defineStore} from 'pinia'
+
+export const useCounterStore = defineStore('counter', () => {
+    let id = 0
+
+    const todos = ref([
+        { id: id++, text: '할 일1', isDone: false},
+        { id: id++, text: '할 일2', isDone: false}
+    ])
+    
+    return { todos }
+})
+```
+
+2. TodoList.vue에서 가져옴
+```
+import TodoListItem from '@/components/TodoListItem.vue'
+import {useCounterStore} from '@/stores/counter'
+
+const stord = useCounterStore()
+
+
+<TodoListItem v-for="todo in store.todos :key="todo.id" :todo="todo"
+
+```
+
+3. TodoListItem.vue에서 받고 사용
+```
+defineProps({
+    todo:Object
+})
+```
+
+### 생성, 삭제
+
+1. 생성
+- store에 todo 생성 추가하는 addTodo 액션을 정의
+```
+const addTodo = function (todoText) {
+    todos.value.push({
+        id: id++,
+        text: todoText,
+        isDone: false
+    })
+}
+return { todos, addTodo }
+```
+- TodoForm 에서 입력되는 사용자 데이터 양방향 바인딩하여 반응형 변수로 할당
+```
+import { ref } from 'vue'
+const todoText = ref('')
+
+<form>
+
+<input type="text" v-model="todoText">
+<input type="submit">
+</form>
+```
+- TodoForm에서 store에서 정의한 addTodo 액션 메서드 호출
+
+```
+import { useCounterStore } from '@/stores/counter' 
+
+const store = useCounterStore()
+
+const createTodo = function (todoText) {
+    store.addTodo(todoText)
+}
+```
+</details>
