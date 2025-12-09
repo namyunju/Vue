@@ -1123,3 +1123,54 @@ const createTodo = function (todoText) {
 }
 ```
 </details>
+<details><summary>Vue with DRF</summary>
+
+### onboarding
+게시글 목록 보기 버튼 클릭 시 데이터는 어떤 과정을 거쳐 화면에 나타날까?
+1. Vue에서 시작해 Axios를 통해 DRF 서버로 전달
+2. 이 때 CORS라는 보안 확인 절차를 거침
+3. DRF는 요청받은 데이터를 처리 후 JSON 형태로 응답
+4. Pinia가 응답받은 데이터를 중앙 저장소에 저장하고 컴포넌트는 이 데이터를 화면에 렌더링함.
+
+지금까지 배워온 프론트엔드 Vue 와 백엔드 Django를 연결하여 하나의 완전한 웹 어플리케이션을 만듦.
+
+
+## CORS
+- 기본적으로 웹 브라우저는 같은 출처에서만 요청하는 것을 허용.
+- 다른 출처로의 요청은 보안 상의 이유로 차단
+- 이는 SOP(동일 출처 정책)에 의해 다른 출처의 리소스와 상호작용 하는 것이 기본적응로 제한됨.
+
+### SOP
+Same-origin policy. 동일 출처 정책
+- 같은 출처에서만 리소스를 자유롭게 공유할 수 있다 는 웹 브라우저의 가장 기본적인 보안 규칙
+- 한 출처에서 실행된 스크립트가 다른 출처의 데이터를 마음대로 읽어오지 못하도록 막아 보안
+
+
+**Origin**
+- 출처: URL의 Protocol, Host, Port 모두 포함하여 출처라고 부름
+- 아래 세 영역이 일치하는 경우에만 동일 출처로 인정
+- http://localhost:3000/posts/3
+- Protocol://Host:Port/Path
+
+CORS Policy의 등장
+
+- 현대 웹 애플리케이션 다양한 출처로부터 리소스 요청 경우 많음
+- CORS는 웹 서버가 리소스에 대한 서로 다른 출처 간 접근을 허용하도록 선택할 수 있는 기능을 제공
+
+### CORS
+교차 출처 리소스 공유 Cross-origin-Resource Sharing
+- 다른 출처 자원 공유 허용하기 위해 서버가 발급하는 허가증
+- 서버가 '이 출처에서 온 요청은 데이터 읽어도 돼' 라고 브라우저에게 알려줌
+- 동일 출처 정책 SOP를 안전하게 우회, 다른 서버 간 통신 가능하게 됨
+
+다른 출처 리소스 불러오려면 그 다른 출처에서 올바른 CORS header를 포함한 응답을 반환해야 함
+
+>> 서버에서 CORS Header를 만들어야 함!!!!
+서버가 약속된 CORS Header를 포함하여 응답한다면 브라우저는 해당 요청을 허용함.
+
+### CORS-Header 설정
+- Django에서 설정
+    - django-cors-headers 라이브러리 활용 (pip install)
+    - settings.py에서 installed_app 등에 추가
+
+</details>
