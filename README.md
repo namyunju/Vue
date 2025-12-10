@@ -1174,3 +1174,146 @@ CORS Policy의 등장
     - settings.py에서 installed_app 등에 추가
 
 </details>
+
+
+<details><summary>Vue with DRF 2</summary>
+
+### Onboarding
+사용자 인증 구현 시 프론트와 백의 역할?
+- DRF 백엔드: 사용자 정보 검증, 안전한 토큰 발급, 어떤 요청이 허가되는지 권한 규칙 정함
+
+-Vue 프론트엔드: 로그인 폼 제공, 발급받은 토큰 저장, 보호된 요청 보낼 때 토큰을 함께 전송
+
+**학습 내용**
+- DRF 토큰 기반 인증 시스템 동작
+- dj-rest-auth 사용하여 인증 관련 API 엔드 포인트 구성
+- 로그인 API 요청 통해 DRF로부터 인증토큰 발급
+- 발급 받은 토큰을 Authorization 헤더에 담아 요청 보냄
+- DRF의 권한 Permission 개념과 4041 403 에러
+- @permission_classes로 view로의 접근 권한 설정
+- 게시글 등 데이터 생성 시 현재 인증된 사용자와 연결
+
+## 인증과 권한
+
+- 인증 authentication 
+    - 신분 확인
+    - 회원 가입 후 로그인 시 key 발급됨
+    - (postman) 게시글 생성 요청 보낼 때 header에 담아 보냄
+    
+- 권한 authorization
+    - 허가 여부
+    - 사용자가 뷰나 액션에 접근할 자격이 있는지 확인
+
+## 인증 with DRF
+
+DRF에서 인증은 항상 view 함수 시작 시 다른 코드 진행이 허용되기 전에 실행됨
+
+- 수신 요청과 자격증명 자료(해당 요청의 사용자 / 해당 요청이 서명된 토큰)를 연결
+- 이후 인증이 완료된 해당 자격 증명 사용하여 권한 및 제한 정책 확인, 요청 허용 결정
+- 인증 자체로는 요청을 허용하거나 거부할 수 없음. 단순히 요청에 사용된 자격증명만 식별
+
+인증되지 않은 요청이 권한을 거부하는 경우, 두 가지 오류 코드 응답
+1. HTTP 401 Unauthorized 요청에 유효한 인증 자격 증명 없어서 사용자 식별 불가
+2. HTTP 403 Forbidden 서버에 요청 전달되었으나 권한때문에 거절
+
+### 인증 정책 설정 방법
+
+두 가지 방법: 전역 설정과 View 함수 별(기능별) 설정 (서비스에 따라 선택)
+
+- rest_framework.authentication.BasicAuthentication
+- rest_framework.authentication.TokenAuthentication
+
+DRF가 제공하는 인증 체계
+1. BasicAuthentication
+- 요청마다 사용자 이름과 비밀번호를 Base64로 인코딩하여 Authorization 헤더에 담아 보냄
+2. TokenAuthentication
+- 로그인 시 발급받은 고유한 토큰을 Authorization 헤더에 담아 요청하여 사용자 인증
+3. SessionAuthentication
+- 장고의 기본 세션 시스템을 활용하여 브라우저가 보내는 sessionid 쿠키로 사용자 인증
+4. RemotUserAuthentication
+- 웹 서버 등 외부 시스템이 이미 처리한 인증 결과 신뢰, 전달받은 사용자 이름으로 사용자 인증
+
+### TokenAuthentication
+
+**적용 과정**
+
+- 사전 준비
+    - 인증 로직 진행 위해 User 모델 관련 코드 활성화 (models.py 에서 user ForeignKey 작성)
+    - serializers에서도 read_only_fields = ('user',)
+    - views.py 에서 serializer.save(user=request.user) 작성
+    - 이후 Migration 진행
+
+
+1. 인증 클래스 설정
+- settings.py 에서 TokenAuthentications 활성화
+```
+REST_FRAMEWORK = {
+    # Authentication
+    'DEFAULT_AUTHENTICATION_CLASSES': [
+        'rest_framework.authentication.TokenAuthentication',
+    ],
+    # permission
+    # 'DEFAULT_PERMISSION_CLASSES': [
+    #     'rest_framework.permissions.AllowAny',
+    # ],
+}
+```
+
+2. INSTALLED_APPS 추가 rest_framework.authtoken
+3. Migrate 진행
+
+
+- 토큰 인증 방식
+사용자 로그인 > 서버에서 사용자 확인 > 서버에서 토큰 발급 > 클라이언트에게 토큰과 함께 응답 > 클라이언트가 서버에게 데이터 요청(토큰과 함께) > 서버에서 토큰 검증 > 서버에서 클라이언트에게 응답 (+요청데이터)
+
+
+### Dj-Rest-Auth 라이브러리
+
+회원가입, 로그인, 로그아웃 등 다양한 인증 관련 기능을 API 엔드포인트로 제공하는 라이브러리. 
+
+인증 기능을 RESTful API로 제공
+
+- 설치 pip install dj-rest-auth
+- 설치된 앱 추가 dj_rest_auth
+- url 추가 path('accounts/', include('dj_rest_auth.urls')),
+
+dj-rest-auth의 Registration 등록 기능(회원가입) 추가 설정 방법
+- pip install dj-rest-auth[with_social] 
+- settings.py 에서 installedapp 추가 , SITE_ID = 1 작성
+```
+'django.contrib.sites',
+    'allauth',
+    'allauth.account',
+    'allauth.socialaccount',
+    'dj_rest_auth.registration',
+```
+
+- 미들 웨어 추가  'allauth.account.middleware.AccountMiddleware',
+- url 추가  path('accounts/signup/', include('dj_rest_auth.registration.urls')),
+- 마이그레이션 진행
+
+
+
+### 토큰 활용
+발급받은 키 사용
+- headers에 Key: Authorization Value: Token {key}
+
+
+## 권한 with DRF
+
+### 권한 정책 설정
+1. 전역설정
+- 프로젝트 전체에 적용되는 기본 권한 방식 정의
+- REST_FRAMEWORK = { 'DEFAULT_PERMISSON_CLASSES' : ['rest_framework.permissions.IsAuthenticated']} 
+2. view 함수 별 설정
+- permission_classes 데코레이터 사용
+- @permission_classes([IsAuthenticated])
+
+장고의 권한 정책 4가지
+- IsAuthenticated (회원 전용, 결제, 프로필 수정 등 사용)
+- IsAdminUser (민감한 API)
+- IsAuthenticatedOrReadOnly (게시글 목록)
+- AllowAny (공개글)
+
+
+</details>
