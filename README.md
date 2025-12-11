@@ -1317,3 +1317,160 @@ dj-rest-auth의 Registration 등록 기능(회원가입) 추가 설정 방법
 
 
 </details>
+
+<details><summarY>Vue with DRF 03</summary>
+인증 with view 
+- 회원가입, 로그인, 로그아웃
+- 요청과 토큰, 인증 여부 확인
+- user customize (user model field, registerserializer)
+
+
+### Onboarding
+권한 설정 추가 시 게시글 조회가 401 Unauthorized 오류와 함께 막힘. 어떻게 해결?
+
+인증 과정에서 vue의 역할을 알아보자!
+
+1. vue에서 로그인 요청
+2. DRF로부터 토큰 받음
+3. 토큰을 Pinia store에 저장
+4. 모든 요청에 토큰을 포함하여 보냄
+
+
+### 회원가입
+
+기본
+- 컴포넌트 생성 (form)
+- 라우터 등록 및 링크 작성
+- signUp 함수 작성
+    - 컴포넌트에서 store 호출용
+    - store에서 axios 포함 하나 (method, url, data)
+
+
+### 로그인
+회원가입과 유사
+- 컴포넌트 작성 
+- 라우터 등록 및 링크 작성
+- logIn 함수 
+    - 컴포넌트에 store 함수 호출
+    - store에 axios(method, url, data) 포함 함수 하나
+
+로그인 후 응답 객체 안에 django가 발급한 토큰이 함께 옴 
+
+>> 이 토큰을 store 에 저장하여 인증이 필요한 요청마다 함께 보냄
+
+
+## 요청과 토큰
+
+1. 토큰 저장 로직
+- store/accounts.js 내
+```
+const token = ref(null)
+
+const logIn = function(payload) {
+    axios({
+
+    }).then((res) => {
+        token.value=res.data.key
+    })
+}
+```
+
+2. 요청 시 토큰 추가
+- 토큰은 현재 accountStore에 token으로 있음
+- 게시글 전체 목록 조회 한다면 store/articles.js
+
+```
+import { userAccountStore } from './accounts'
+
+const accountStore = useAccountStore()
+
+const getArticles = function () {
+    axios({
+        method:'get',
+        url: ``,
+        headers: {
+            'Authorization': `Token ${accountStore.token}`
+        }
+    })
+}
+```
+
+### 사용자 인증(로그안) 여부에 따른 추가 기능 구현
+
+1. 인증되지 않은 사용자: 메인페이지 접근 제한
+2. 인증된 사용자: 회원가입, 로그인 페이지 접근 제한
+
+**토큰 소유 여부**
+
+- 토큰 소유 여부에 따라 로그인 상태 나타냄
+- isLogin 변수 작성
+- computed 활용해서 token 값 변경될 때만 상태 다시 계산
+
+```
+const isLogin = computed(() => {
+    return token.value ? true : false
+})
+```
+
+- router/index.js
+- 전역 네비게이션 가드 beforeEach 활용
+- 인증되지 않은 사용자가 보호된 페이지로 이동 시도 시 로그인 페이지로 리다이렉트
+```
+import {useAccountStore} from ''
+
+router.beforeEach((to,from) => {
+    const accountStore = useAccountStore()
+
+    if (to.name === 'ArticleView' && !accountStore.isLogin) {
+        window.alert('로그인 필요')
+        return {name:'LoginView'}
+    }
+})
+```
+
+## UserCustomize
+dj-rest-auth를 활용한 회원가입 시 User Model Customize
+
+- accounts/models.py
+- 나이 정보 저장할 필드 추가, migrate
+- vue에서 input과 payload 데이터 수정
+- signup 함수에서 age 정보 추가
+
+
+그런데!!!
+- 기본적으로 dj-rest-auth의 RegisterSerializer의 field는 username, email, password1, password2 만 정의되어 있음
+- age 정보는 누락됨
+- CustomRegisterSerializer 새로 정의(RegisterSerializer 상속)
+- 유효성 검사
+    - get_cleaned_data 함수
+    - super()를 사용하여 기존 필드 유효성 검사
+    - 추가 필드에 대해 동일 작업 진행 결과 반환
+
+- dj-rest-auth가 CustomRegisterSerializer 사용하도록 settings.py 에서 REST_AUTH_REGISTER_SERIALIZERS 작성
+
+
+### 로그 아웃
+```
+import {useRouter} from 'vue-router'
+const router = useRouter()
+
+const logOut = function() {
+    axios({
+        method: 'post',
+        url: ``,
+        
+    }).then((res) => {
+        token.value=null
+        router.push({name:'ArticleView'})
+    })
+}
+
+```
+
+## 환경 변수
+- 애플리케이션의 설정이나 동작을 제어하기 위해 사용되는 변수
+- 개발, 테스트, 프로덕션 환경에서 다르게 설정되어야 하는 설정 값이나 민감한 정보를 포함
+- 환경 변수를 사용하여 애플리케이션 설정 관리하면 다양한 환경에서 일관된 동작 유지하며 필요에 따라 변수 쉽게 변경
+- 보안적 이슈 피하고 애플리케이션을 다양한 환경에 대응하기 쉽게 만들어 줌.
+
+</details>
