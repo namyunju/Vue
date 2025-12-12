@@ -1474,3 +1474,108 @@ const logOut = function() {
 - 보안적 이슈 피하고 애플리케이션을 다양한 환경에 대응하기 쉽게 만들어 줌.
 
 </details>
+<details><summary>JWT와 위치 기반 지도 검색 기능</summary>
+
+## JWT
+JSON Web Token
+
+- 유저가 스스로 누군지 증명하는 디지털 출입증
+- 서버가 유저에게 발급해주는 긴 문자열
+- 해당 문자열 안에는 유저의 정보가 암호화되어 들어 있음
+
+### JWT 구조
+- . 으로 구분하고 3 부분으로 나뉘어짐
+- Header / Payload / Signature
+- Header: 어떤 알고리즘으로 암호화 했는가. 봉투
+- Payload: 실제 유저 정보. 누구나 볼 수 있어 민감한 정보 있으면 안 됨
+- Signature: 정보가 조작되지 않았음을 증명하는 위조 방지 도장. 서버가 가진 키로 위조 유무 확인 가능
+
+### JWT 동작 흐름
+- client가 server에 로그인 요청
+- server가 사용자 정보 검증 후 client에 JWT 토큰 발급
+- 사용자는 JWT를 브라우저나 앱에 저장
+- client는 발급받은 JWT를 header에 담아 server에 API 요청
+- server는 별도의 DB 조회 없이 JWT에 포함된 서명 검증 후 client에 응답
+
+**장점**
+- 서버 부담이 적음 (DB 조회없이 토큰에 포함된 서명만 확인하면 됨)
+- 확장성이 좋음 (서버가 여러 대인 경우에도 토큰만 있다면 모두 인증 가능)
+- 모바일 친화적 (웹뿐만 아니라 앱도)
+
+**단점**
+- 키를 잃어버린 경우 대응 어려움
+- 실수로 payload에 개인정보 있을 시 누구든 확인 가능
+
+
+### Token 방식 vs JWT 방식
+| Token 방식 | JWT 방식 |
+|---|---|
+|정보는 서버에. 키 자체에는 정보 없음| 키에 정보 있어, 서버가 정보확인할 필요 없음|
+|DB에 저장된 정보 확인하여 사용자 인증| 서버가 토큰 해석해서 사용자 인증|
+|키 유출 시 서버에서 Disable 처리하여 대응| 간단하지만 키 유출 시 대응 힘듦|
+|로그인 관리 엄격 경우 사용(은행)|대규모 트래픽 처리 필요한 곳 사용(SNS, 쇼핑몰)|
+
+
+### JWT 실습
+- djangorestframework-simplejwt 패키지 설치
+- settings.py
+    - 토큰 인증을 JWTAuthentication으로 변경
+    - INSTALLED_APP에 추가, USE_JWT: True
+    - store에서 token.value = res.data.access 
+    - Authorization 에서 토큰이 아닌 Bearer로 변경
+
+### refresh token
+- 로그인 다시 하지 않아도 Access Token을 새로 받을 수 있게 함
+- Access Token은 유효기간 짧음 (보안)
+- refresh token은 access token을 재발급 받을 수 있게 하는 용도.
+    - 유효시간은 access token보다 길게, 외부 노출되지 않게
+
+
+## 위치 기반 지도 검색 기능 구현
+
+### Geolocation API
+사용자의 현재 위치 정보를 브라우저를 통해 간편하게 얻을 수 있는 인터페이스
+
+```
+navigator.geolocation.getCurrentPosition(
+    SuccessCallBack,
+    ErrorCallBack,
+    Options
+)
+```
+- navigator: 사용자 에이전트의 상태와 신원 정보
+- geolocation: 장치의 위치 정보에 접근할 수 있는 객체
+- getCurrentPosition: 사용자의 현재 위치를 불러오는 메서드
+
+### iframe
+- Inline Frame 줄임말
+- HTML 문서 안에 또 다른 HTML 문서를 삽입하는 태그
+- 외부 페이지를 현재 페이지에 임베드할 때 사용
+
+기본 문법 
+- src / width, height / allowfullscreen / loading
+
+vue 코드
+- 위도 경도 정보 토대로 mapUrl 작성
+- 사용자 입력 값을 query로 활용
+
+**생각**
+사용자 입력마다 지도 업데이트? 잦은 API 요청 -> 과금
+>> 입력 값 감시하고 특정 조건 만족할 때마다 갱신?
+>> watch는 변경되었다는 사실만 알 수 있음
+
+>> jsdiff
+
+### jsdiff
+자바스크립트로 텍스트 구분을 구현
+
+이전 텍스트와 새 텍스트를 받아서 두 텍스트의 차이를 구분
+
+- 패키지 설치 diff
+- diff 메서드 종류
+    - Diff.diffChars(oldStr, newStr) : 두 텍스트 비교, 각 문자를 토큰 취급
+    - Diff.diffWords(oldStr, newStr) : 두 텍스트 비교, 각 단어와 구두점을 토큰으로 취급
+    - Diff.diffWordsWithSpace(oldStr, newStr) : 두 텍스트 비교, 각 단어 및 구두점 및 줄 바꿈 공백을 토큰으로 처리
+
+
+</details>
